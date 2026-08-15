@@ -53,10 +53,6 @@ export default function Login() {
           </button>
           <div className="login-error">{error}</div>
         </form>
-        <div className="login-hint">
-          Contas de administrador são criadas no console do Firebase
-          (Authentication → Users). Não há cadastro público neste sistema.
-        </div>
       </div>
     </div>
   )
