@@ -3,17 +3,19 @@ import { getAuth } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDn8-_hwoyDpquySnwvFJAjA_IDQUz67bs",
-  authDomain: "brisaperfumes-d1ad3.firebaseapp.com",
-  projectId: "brisaperfumes-d1ad3",
-  storageBucket: "brisaperfumes-d1ad3.firebasestorage.app",
-  messagingSenderId: "1000196666963",
-  appId: "1:1000196666963:web:86cf8ee45d554d1a1078a6",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 }
 
-export const isFirebaseConfigured = !Object.values(firebaseConfig).some(
-  (v) => String(v).startsWith('SUA_') || String(v).startsWith('SEU_'),
-)
+export const isFirebaseConfigured = Object.values(firebaseConfig).every(Boolean)
+
+if (!isFirebaseConfigured) {
+  throw new Error('Configuração do Firebase ausente. Copie .env.example para .env e preencha as variáveis.')
+}
 
 export const app = initializeApp(firebaseConfig)
 export const auth = getAuth(app)
