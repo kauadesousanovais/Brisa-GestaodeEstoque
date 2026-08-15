@@ -1,21 +1,23 @@
 import { useData } from '../context/DataContext'
 import { fmtBRL, MONTHS, ALL_MONTHS } from '../utils/format'
-import { monthlyRevenue, monthlyCost } from '../utils/calculations'
+import { monthlyRevenue, monthlyCost, yearsWithData } from '../utils/calculations'
 import PageHeader from './PageHeader'
 import BalancoChart from './BalancoChart'
 
-export default function BalancoView() {
+export default function BalancoView({ activeYear, setActiveYear }) {
   const { movements, sales } = useData()
   const monthsIdx = ALL_MONTHS
+  const availableYears = yearsWithData(sales, movements)
 
-  const totalRev = monthsIdx.reduce((s, i) => s + monthlyRevenue(sales, i), 0)
-  const totalCost = monthsIdx.reduce((s, i) => s + monthlyCost(movements, i), 0)
+  const totalRev = monthsIdx.reduce((s, i) => s + monthlyRevenue(sales, i, activeYear), 0)
+  const totalCost = monthsIdx.reduce((s, i) => s + monthlyCost(movements, i, activeYear), 0)
   const totalSaldo = totalRev - totalCost
 
   return (
     <>
       <PageHeader title="Balanço" subtitle="Comparativo entre entradas e gastos com base no estoque" />
       <div className="content">
+        <div className="year-filter"><label>Ano</label><select value={activeYear} onChange={(e) => setActiveYear(Number(e.target.value))}>{availableYears.map((year) => <option key={year}>{year}</option>)}</select></div>
         <div className="stat-row">
           <div className="card stat-card">
             <div className="stat-label">Total de entradas (receita)</div>
@@ -37,11 +39,11 @@ export default function BalancoView() {
         <div className="card chart-card">
           <div className="section-title-sm">Entradas vs. gastos</div>
           <div className="section-title">Balanço mensal do estoque</div>
-          <div className="chart-wrap"><BalancoChart months={monthsIdx} sales={sales} movements={movements} /></div>
+          <div className="chart-wrap"><BalancoChart months={monthsIdx} sales={sales} movements={movements} year={activeYear} /></div>
         </div>
 
         <div className="section-head"><div className="section-title">Detalhamento por mês</div></div>
-        <div className="card">
+        <div className="card table-card">
           <table>
             <thead><tr><th>Mês</th><th>Entradas</th><th>Gastos</th><th>Saldo</th></tr></thead>
             <tbody>
@@ -49,8 +51,8 @@ export default function BalancoView() {
                 <tr><td colSpan={4} style={{ textAlign: 'center', color: 'var(--ink-faint)', padding: 24 }}>Sem dados suficientes ainda.</td></tr>
               )}
               {monthsIdx.map((i) => {
-                const rev = monthlyRevenue(sales, i)
-                const cost = monthlyCost(movements, i)
+                const rev = monthlyRevenue(sales, i, activeYear)
+                const cost = monthlyCost(movements, i, activeYear)
                 const saldo = rev - cost
                 return (
                   <tr key={i}>

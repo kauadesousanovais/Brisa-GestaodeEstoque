@@ -2,29 +2,23 @@ import { useState } from 'react'
 import Modal from './Modal'
 import { useData } from '../context/DataContext'
 
-const MOTIVOS_ENTRADA = ['Reposição de estoque', 'Compra de fornecedor', 'Devolução de cliente', 'Ajuste de inventário']
-const MOTIVOS_SAIDA = ['Venda balcão', 'Produto danificado', 'Perda / amostra', 'Ajuste de inventário']
-
 export default function MovimentoModal({ product, tipo, onClose }) {
   const { registerMovement } = useData()
   const isEntrada = tipo === 'entrada'
-  const motivos = isEntrada ? MOTIVOS_ENTRADA : MOTIVOS_SAIDA
-
   const [qtd, setQtd] = useState('')
-  const [motivo, setMotivo] = useState(motivos[0])
   const [valor, setValor] = useState(isEntrada ? product.custo : product.venda)
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
 
   async function handleSubmit(e) {
     e.preventDefault()
-    let q = Number(qtd)
-    if (!isEntrada) q = Math.min(q, product.qtd)
-    if (q <= 0) { setError('Informe uma quantidade válida.'); return }
+    const q = Number(qtd)
+    if (!Number.isInteger(q) || q <= 0) { setError('Informe uma quantidade válida.'); return }
+    if (!isEntrada && q > product.qtd) { setError('Estoque insuficiente. Disponível: ' + product.qtd + ' un.'); return }
     setSaving(true)
     setError('')
     try {
-      await registerMovement(product, tipo, q, motivo, Number(valor))
+      await registerMovement(product, tipo, q, isEntrada ? 'Entrada de estoque' : 'Venda balcão', Number(valor))
       onClose()
     } catch (err) {
       setError('Não foi possível salvar: ' + err.message)
@@ -43,12 +37,6 @@ export default function MovimentoModal({ product, tipo, onClose }) {
             type="number" min="1" max={!isEntrada ? product.qtd : undefined} required
             placeholder="0" value={qtd} onChange={(e) => setQtd(e.target.value)}
           />
-        </div>
-        <div className="field">
-          <label>Motivo</label>
-          <select value={motivo} onChange={(e) => setMotivo(e.target.value)}>
-            {motivos.map((m) => <option key={m}>{m}</option>)}
-          </select>
         </div>
         <div className="field">
           <label>Valor unitário (R$)</label>

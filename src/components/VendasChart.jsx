@@ -2,10 +2,10 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { MONTHS, fmtBRL } from '../utils/format'
 import { monthlyProfit } from '../utils/calculations'
 
-export default function VendasChart({ months, sales, products }) {
+export default function VendasChart({ months, sales, products, year }) {
   const data = months.map((i) => ({
     mes: MONTHS[i].slice(0, 3),
-    lucro: monthlyProfit(sales, products, i),
+    lucro: monthlyProfit(sales, products, i, year),
   }))
 
   return (

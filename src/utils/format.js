@@ -15,4 +15,8 @@ export const fmtDate = (iso) => {
 
 export const monthOf = (iso) => parseInt(iso.split('-')[1], 10) - 1
 
-export const todayISO = () => new Date().toISOString().slice(0, 10)
+export const todayISO = () => {
+  const now = new Date()
+  const offset = now.getTimezoneOffset() * 60 * 1000
+  return new Date(now.getTime() - offset).toISOString().slice(0, 10)
+}

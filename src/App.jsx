@@ -1,24 +1,12 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { useAuth } from './hooks/useAuth'
 import { DataProvider, useData } from './context/DataContext'
-import { isFirebaseConfigured } from './firebase'
 import Login from './components/Login'
 import Sidebar from './components/Sidebar'
-import EstoqueView from './components/EstoqueView'
-import VendasView from './components/VendasView'
-import BalancoView from './components/BalancoView'
 
-function ConfigWarning() {
-  if (isFirebaseConfigured) return null
-  return (
-    <div style={{
-      position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200,
-      background: '#B14A45', color: '#FFFFFF', fontFamily: 'Work Sans, sans-serif',
-      fontSize: 13, fontWeight: 600, textAlign: 'center', padding: '10px 16px',
-    }}>
-    </div>
-  )
-}
+const EstoqueView = lazy(() => import('./components/EstoqueView'))
+const VendasView = lazy(() => import('./components/VendasView'))
+const BalancoView = lazy(() => import('./components/BalancoView'))
 
 function LoadingScreen({ label = 'Carregando…' }) {
   return (
@@ -28,20 +16,46 @@ function LoadingScreen({ label = 'Carregando…' }) {
   )
 }
 
-function MainApp({ userEmail }) {
+function DataError({ error }) {
+  return (
+    <div className="data-error card">
+      <h2>Não foi possível carregar os dados</h2>
+      <p>{error?.message || 'Verifique sua conexão e as permissões do Firestore.'}</p>
+      <button className="btn btn-primary" onClick={() => window.location.reload()}>
+        Tentar novamente
+      </button>
+    </div>
+  )
+}
+
+function MainApp({
+  userEmail, activeYear, setActiveYear,
+}) {
   const [view, setView] = useState('estoque')
   const [activeMonth, setActiveMonth] = useState(new Date().getMonth())
-  const { loading } = useData()
+  const { loading, error } = useData()
 
   if (loading) return <LoadingScreen label="Carregando dados do Firestore…" />
+  if (error) return <DataError error={error} />
 
   return (
     <div className="shell">
       <Sidebar view={view} setView={setView} userEmail={userEmail} />
       <main className="main">
-        {view === 'estoque' && <EstoqueView />}
-        {view === 'vendas' && <VendasView activeMonth={activeMonth} setActiveMonth={setActiveMonth} />}
-        {view === 'balanco' && <BalancoView />}
+        <Suspense fallback={<LoadingScreen label="Carregando tela…" />}>
+          {view === 'estoque' && <EstoqueView />}
+          {view === 'vendas' && (
+            <VendasView
+              activeMonth={activeMonth}
+              setActiveMonth={setActiveMonth}
+              activeYear={activeYear}
+              setActiveYear={setActiveYear}
+            />
+          )}
+          {view === 'balanco' && (
+            <BalancoView activeYear={activeYear} setActiveYear={setActiveYear} />
+          )}
+        </Suspense>
       </main>
     </div>
   )
@@ -49,14 +63,19 @@ function MainApp({ userEmail }) {
 
 export default function App() {
   const user = useAuth()
+  const [activeYear, setActiveYear] = useState(new Date().getFullYear())
 
   return (
     <>
       {user === undefined && <LoadingScreen />}
       {user === null && <Login />}
       {user && (
-        <DataProvider>
-          <MainApp userEmail={user.email} />
+        <DataProvider year={activeYear}>
+          <MainApp
+            userEmail={user.email}
+            activeYear={activeYear}
+            setActiveYear={setActiveYear}
+          />
         </DataProvider>
       )}
     </>

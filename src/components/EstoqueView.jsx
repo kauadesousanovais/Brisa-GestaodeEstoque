@@ -9,13 +9,13 @@ import MovimentoModal from './MovimentoModal'
 import { IconPlus } from './Icons'
 
 export default function EstoqueView() {
-  const { products, movements } = useData()
+  const { products, recentMovements } = useData()
   const [modal, setModal] = useState(null) // null | 'novo' | { tipo, product }
 
   const totalUnidades = products.reduce((s, p) => s + p.qtd, 0)
-  const lowCount = products.filter((p) => p.qtd <= p.min).length
+  const outOfStockCount = products.filter((p) => p.qtd <= 0).length
   const valorEstoque = products.reduce((s, p) => s + p.qtd * p.custo, 0)
-  const recentMovs = movements.slice(0, 12)
+  const recentMovs = recentMovements
 
   return (
     <>
@@ -28,9 +28,9 @@ export default function EstoqueView() {
             <div className="stat-delta">{products.length} produtos cadastrados</div>
           </div>
           <div className="card stat-card">
-            <div className="stat-label">Estoque baixo</div>
-            <div className={`stat-value ${lowCount > 0 ? 'danger' : 'success'}`}>{lowCount}</div>
-            <div className="stat-delta">produtos abaixo do mínimo</div>
+            <div className="stat-label">Produtos esgotados</div>
+            <div className={`stat-value ${outOfStockCount > 0 ? 'danger' : 'success'}`}>{outOfStockCount}</div>
+            <div className="stat-delta">produtos sem unidades</div>
           </div>
           <div className="card stat-card">
             <div className="stat-label">Valor em estoque</div>
@@ -48,16 +48,16 @@ export default function EstoqueView() {
 
         <div className="product-grid">
           {products.map((p) => {
-            const low = p.qtd <= p.min
-            const percent = Math.min(1, p.qtd / (p.min * 3 || 1))
+            const low = p.qtd <= 0
+            const percent = Math.min(1, p.qtd / 10)
             return (
               <div key={p.id} className={`card product-card ${low ? 'low' : ''}`}>
-                {low && <span className="badge badge-low">Estoque baixo</span>}
+                {low && <span className="badge badge-low">Esgotado</span>}
                 <div className="vial"><VialGauge percent={percent} low={low} /></div>
                 <div className="product-info">
-                  <div className="product-fam">{p.familia}</div>
+                  <div className="product-fam">{p.fragrancia || p.familia || 'Sem fragrância informada'}</div>
                   <div className="product-name">{p.nome}</div>
-                  <div className="product-brand">{p.marca} · {p.ml}ml</div>
+                  <div className="product-brand">{p.marca}{p.ml ? ' · ' + p.ml + 'ml' : ''}</div>
                   <div className="product-meta">
                     <div><span>Qtd.</span>{p.qtd} un.</div>
                     <div><span>Custo</span>{fmtBRL(p.custo)}</div>
@@ -84,7 +84,7 @@ export default function EstoqueView() {
         </div>
 
         <div className="section-head"><div className="section-title">Movimentações recentes</div></div>
-        <div className="card">
+        <div className="card table-card">
           <table>
             <thead>
               <tr><th>Data</th><th>Produto</th><th>Tipo</th><th>Quantidade</th><th>Motivo</th><th>Valor</th></tr>

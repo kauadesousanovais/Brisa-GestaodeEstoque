@@ -2,7 +2,7 @@ import { useState } from 'react'
 import Modal from './Modal'
 import { useData } from '../context/DataContext'
 
-const EMPTY = { nome: '', marca: '', familia: '', ml: '', min: '', custo: '', venda: '', qtd: '' }
+const EMPTY = { nome: '', marca: '', fragrancia: '', ml: '', custo: '', venda: '', qtd: '' }
 
 export default function NovoProdutoModal({ onClose }) {
   const { addProduct } = useData()
@@ -20,9 +20,8 @@ export default function NovoProdutoModal({ onClose }) {
       await addProduct({
         nome: form.nome.trim(),
         marca: form.marca.trim(),
-        familia: form.familia.trim(),
-        ml: Number(form.ml),
-        min: Number(form.min),
+        fragrancia: form.fragrancia.trim(),
+        ml: form.ml === '' ? null : Number(form.ml),
         custo: Number(form.custo),
         venda: Number(form.venda),
         qtd: Number(form.qtd),
@@ -49,18 +48,14 @@ export default function NovoProdutoModal({ onClose }) {
             <input required placeholder="Ex: Maison Cardeal" value={form.marca} onChange={update('marca')} />
           </div>
           <div className="field">
-            <label>Família olfativa</label>
-            <input required placeholder="Ex: Floral" value={form.familia} onChange={update('familia')} />
+            <label>Fragrância (opcional)</label>
+            <input placeholder="Ex: Lavanda" value={form.fragrancia} onChange={update('fragrancia')} />
           </div>
         </div>
         <div className="modal-row">
           <div className="field">
-            <label>Volume (ml)</label>
-            <input type="number" min="1" required placeholder="100" value={form.ml} onChange={update('ml')} />
-          </div>
-          <div className="field">
-            <label>Estoque mínimo</label>
-            <input type="number" min="0" required placeholder="6" value={form.min} onChange={update('min')} />
+            <label>Volume (ml) (opcional)</label>
+            <input type="number" min="1" placeholder="100" value={form.ml} onChange={update('ml')} />
           </div>
         </div>
         <div className="modal-row">

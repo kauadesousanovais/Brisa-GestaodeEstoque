@@ -1,36 +1,66 @@
-import { monthOf } from './format'
-
 export function productById(products, id) {
   return products.find((p) => p.id === id)
 }
 
-export function salesByMonth(sales, monthIdx) {
+const dateParts = (iso) => {
+  const [year, month] = String(iso || '').split('-').map(Number)
+  return { year, monthIdx: month - 1 }
+}
+
+const inPeriod = (iso, monthIdx, year) => {
+  const parts = dateParts(iso)
+  return parts.monthIdx === monthIdx && parts.year === year
+}
+
+export function salesByMonth(sales, monthIdx, year) {
   return sales
-    .filter((s) => monthOf(s.data) === monthIdx)
+    .filter((s) => inPeriod(s.data, monthIdx, year))
     .sort((a, b) => a.data.localeCompare(b.data))
 }
 
-export function monthsWithData(sales, movements) {
-  const set = new Set([
-    ...sales.map((s) => monthOf(s.data)),
-    ...movements.map((m) => monthOf(m.data)),
-  ])
-  return [...set].sort((a, b) => a - b)
+export function yearsWithData(sales, movements) {
+  const currentYear = new Date().getFullYear()
+  const recentYears = Array.from({ length: 10 }, (_, index) => currentYear - index)
+  const dataYears = [...sales, ...movements]
+    .map((item) => dateParts(item.data).year)
+    .filter(Number.isInteger)
+  return [...new Set([...recentYears, ...dataYears])].sort((a, b) => b - a)
 }
 
-export function monthlyRevenue(sales, monthIdx) {
-  return salesByMonth(sales, monthIdx).reduce((sum, s) => sum + s.valorUnit * s.qtd, 0)
+export function monthlyRevenue(sales, monthIdx, year) {
+  return salesByMonth(sales, monthIdx, year)
+    .reduce((sum, sale) => sum + sale.valorUnit * sale.qtd, 0)
 }
 
-export function monthlyProfit(sales, products, monthIdx) {
-  return salesByMonth(sales, monthIdx).reduce((sum, s) => {
-    const p = productById(products, s.produtoId)
-    return sum + (s.valorUnit - (p ? p.custo : 0)) * s.qtd
-  }, 0)
+export function saleUnitCost(sale, products) {
+  if (Number.isFinite(sale.custoUnit)) return sale.custoUnit
+  return Number(productById(products, sale.produtoId)?.custo) || 0
 }
 
-export function monthlyCost(movements, monthIdx) {
+export function monthlyProfit(sales, products, monthIdx, year) {
+  return salesByMonth(sales, monthIdx, year).reduce(
+    (sum, sale) => sum + (sale.valorUnit - saleUnitCost(sale, products)) * sale.qtd,
+    0,
+  )
+}
+
+const COST_REASONS = new Set([
+  'Cadastro inicial de produto',
+  'Compra de fornecedor',
+  'Reposição de estoque',
+  'Entrada de estoque',
+])
+
+export function movementIsCost(movement) {
+  if (typeof movement.contabilizaGasto === 'boolean') return movement.contabilizaGasto
+  return COST_REASONS.has(movement.motivo)
+}
+
+export function monthlyCost(movements, monthIdx, year) {
   return movements
-    .filter((m) => m.tipo === 'entrada' && monthOf(m.data) === monthIdx)
-    .reduce((sum, m) => sum + m.valorUnit * m.qtd, 0)
+    .filter((movement) =>
+      movement.tipo === 'entrada'
+      && movementIsCost(movement)
+      && inPeriod(movement.data, monthIdx, year))
+    .reduce((sum, movement) => sum + movement.valorUnit * movement.qtd, 0)
 }

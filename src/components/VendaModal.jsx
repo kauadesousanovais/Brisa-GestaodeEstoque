@@ -5,28 +5,29 @@ import { fmtBRL, todayISO } from '../utils/format'
 
 export default function VendaModal({ onClose }) {
   const { products, registerSale } = useData()
-  const [produtoId, setProdutoId] = useState(products[0]?.id || '')
+  const availableProducts = products.filter((product) => Number(product.qtd) > 0)
+  const [produtoId, setProdutoId] = useState(availableProducts[0]?.id || '')
   const [data, setData] = useState(todayISO())
   const [qtd, setQtd] = useState(1)
-  const [valor, setValor] = useState(products[0]?.venda || 0)
+  const [valor, setValor] = useState(availableProducts[0]?.venda || 0)
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
 
-  const produto = products.find((p) => p.id === produtoId)
+  const produto = availableProducts.find((p) => p.id === produtoId)
 
   function handleProdutoChange(e) {
     const id = e.target.value
     setProdutoId(id)
-    const p = products.find((x) => x.id === id)
+    const p = availableProducts.find((x) => x.id === id)
     if (p) setValor(p.venda)
   }
 
   async function handleSubmit(e) {
     e.preventDefault()
     if (!produto) return
-    let q = Number(qtd)
-    q = Math.min(q, produto.qtd || q)
-    if (q <= 0) { setError('Informe uma quantidade válida.'); return }
+    const q = Number(qtd)
+    if (!Number.isInteger(q) || q <= 0) { setError('Informe uma quantidade válida.'); return }
+    if (q > produto.qtd) { setError('Estoque insuficiente. Disponível: ' + produto.qtd + ' un.'); return }
     setSaving(true)
     setError('')
     try {
@@ -38,7 +39,7 @@ export default function VendaModal({ onClose }) {
     }
   }
 
-  if (products.length === 0) return null
+  if (availableProducts.length === 0) return null
 
   return (
     <Modal onClose={onClose}>
@@ -48,7 +49,7 @@ export default function VendaModal({ onClose }) {
         <div className="field">
           <label>Produto</label>
           <select value={produtoId} onChange={handleProdutoChange}>
-            {products.map((p) => (
+            {availableProducts.map((p) => (
               <option key={p.id} value={p.id}>{p.nome} ({p.qtd} un.)</option>
             ))}
           </select>
@@ -60,7 +61,7 @@ export default function VendaModal({ onClose }) {
           </div>
           <div className="field">
             <label>Quantidade</label>
-            <input type="number" min="1" required value={qtd} onChange={(e) => setQtd(e.target.value)} />
+            <input type="number" min="1" max={produto?.qtd || 0} required value={qtd} onChange={(e) => setQtd(e.target.value)} />
           </div>
         </div>
         <div className="field">

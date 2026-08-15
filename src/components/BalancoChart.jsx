@@ -2,11 +2,11 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { MONTHS, fmtBRL } from '../utils/format'
 import { monthlyRevenue, monthlyCost } from '../utils/calculations'
 
-export default function BalancoChart({ months, sales, movements }) {
+export default function BalancoChart({ months, sales, movements, year }) {
   const data = months.map((i) => ({
     mes: MONTHS[i].slice(0, 3),
-    Entradas: monthlyRevenue(sales, i),
-    Gastos: monthlyCost(movements, i),
+    Entradas: monthlyRevenue(sales, i, year),
+    Gastos: monthlyCost(movements, i, year),
   }))
 
   return (
